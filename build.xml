@@ -27,7 +27,11 @@
 	<mkdir dir="${jar.dir}"/>
 	<jar destfile="${jar.dir}/${ant.project.name}.jar"
 		basedir="${classes.dir}">
+        <manifest>
+          <attribute name="Main-Class" value="data_structures.Main"/>
+        </manifest>
 	</jar>
+
     </target>
 
     <target name="clean-build" depends="clean,jar"/>
