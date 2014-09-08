@@ -16,15 +16,26 @@ public class CoarseGrainedList<T extends Comparable<T>> implements Sorted<T> {
 
 	Node<T> root;
 
-	public void add(T t) {
+	public synchronized void  add(T t) {
+//		System.out.println("Adding " + t);
 		if(root == null){
 			root = new Node<T>(t);
+//			System.out.println("Got out 1");
+//			System.out.println("Now list contains" + this.toString());
+			return;
+		}
+
+		if(root.value.compareTo(t) > 0){
+			Node<T> temp = root;
+			root = new Node<T>(t);
+			root.next = temp;
+//			System.out.println("Now list contains" + this.toString());
 			return;
 		}
 
 		Node<T> cursor = root;
 
-		while(cursor.next != null && cursor.value.compareTo(t) > 0)
+		while(cursor.next != null && cursor.next.value.compareTo(t) < 0)
 			cursor = cursor.next;
 
 		if(cursor.next == null){
@@ -34,9 +45,11 @@ public class CoarseGrainedList<T extends Comparable<T>> implements Sorted<T> {
 			cursor.next = new Node<T>(t);
 			cursor.next.next = tmp;
 		}
+//		System.out.println("Got out!");
+//		System.out.println("Now list contains" + this.toString());
 	}
 
-	public void remove(T t) {
+	public synchronized void remove(T t) {
 
 		// check if root is not null
 		if(root == null)
@@ -88,6 +101,7 @@ public class CoarseGrainedList<T extends Comparable<T>> implements Sorted<T> {
 
 		while(cursor.next != null){
 			result = result + ", " +cursor.next.value;
+			cursor = cursor.next;
 		}
 
 		return result;
