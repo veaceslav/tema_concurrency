@@ -128,11 +128,14 @@ public class CoarseGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 			return new String();
 
 		return 	inOrder(node.left, depth+1)
-				+ " ," + node.value
+				+ node.value + ", "
 				+ inOrder(node.right, depth+1);
 	}
 
 	public String toString() {
+		String rez = inOrder(root, 0);
+		if(!rez.isEmpty())
+			rez = rez.substring(0, rez.length()-2);
 		return "[" + inOrder(root, 0) + "]";
 	}
 }

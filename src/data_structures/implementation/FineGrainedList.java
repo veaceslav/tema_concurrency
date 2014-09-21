@@ -7,7 +7,7 @@ import data_structures.Sorted;
 
 class FNode <T extends Comparable<T>> {
 	public T data;
-	public FNode next;
+	public FNode<T> next;
 	public int key;
 
 	public FNode(T data)
@@ -25,7 +25,7 @@ class FNode <T extends Comparable<T>> {
 }
 
 public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
-	private FNode head;
+	private FNode<T> head;
 	private Lock lock = new ReentrantLock();
 	public FineGrainedList()
 	{
@@ -35,7 +35,7 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 
 	public void add(T t) {
 
-		FNode pred, curr;
+		FNode<T> pred, curr;
 		int key = t.hashCode();
 
 
@@ -56,7 +56,7 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 				pred = curr;
 				curr = curr.next;
 			}
-			FNode FNode = new FNode(t);
+			FNode<T> FNode = new FNode<T>(t);
 			FNode.next = curr;
 			pred.next = FNode;
 			return;
@@ -67,7 +67,7 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 	}
 
 	public void remove(T t) {
-		FNode pp, pred, curr;
+		FNode<T> pp, pred, curr;
 		int key = t.hashCode();
 		try {
 			pp = head;
@@ -104,19 +104,21 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 	}
 
 	public String toString() {
-		FNode curr;
-		String result = "";
+		FNode<T> curr;
+		String result = "[";
 		int key = head.hashCode();
 
 		curr = head.next;
-		int x=0;
+
 		while (curr.key < key) {
-			result += curr.toString()+" ";
-			x++;
+			result += curr.toString()+", ";
 			curr = curr.next;
 		}
 
+		// delete last " ,"
+		if(result.length() != 1)
+			result= result.substring(0,result.length()-2);
 
-		return x+">>"+result;
+		return result + "]";
 	}
 }

@@ -104,6 +104,6 @@ public class CoarseGrainedList<T extends Comparable<T>> implements Sorted<T> {
 			cursor = cursor.next;
 		}
 
-		return result;
+		return result + "]";
 	}
 }
