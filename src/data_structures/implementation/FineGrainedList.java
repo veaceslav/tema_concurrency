@@ -9,24 +9,33 @@ class FNode <T extends Comparable<T>> {
 	public T data;
 	public FNode<T> next;
 	public int key;
+	public Lock lock;
 
 	public FNode(T data)
 	{
 		this.data = data;
 		this.key = data.hashCode();
 		this.next = null;
+		this.lock = new ReentrantLock();
 	}
 
 	public String toString()
 	{
 		return this.data+"";
 	}
-
+	
+	public void lock()
+	{
+		this.lock.lock();
+	}
+	public void unlock()
+	{
+		this.lock.unlock();
+	}
 }
 
 public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 	private FNode<T> head;
-	private Lock lock = new ReentrantLock();
 	public FineGrainedList()
 	{
 		this.head = new FNode(Integer.MIN_VALUE);
@@ -37,69 +46,55 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 
 		FNode<T> pred, curr;
 		int key = t.hashCode();
-
+		head.lock();
+		pred = head;
 
 		try {
-			pred = head;
 			curr = pred.next;
-			while (curr.key < key) {
-				pred = curr;
-				curr = curr.next;
-			}
+			curr.lock();
+			try{
+				while (curr.key < key) {
+					pred.unlock();
+					pred = curr;
+					curr = curr.next;
+					curr.lock();
+				}
 
-			lock.lock();
-			// current position can be corrupted by multiple insert between
-			// current and pred position. So a new check should be done from
-			// the last sure postion (pred one).
-			curr = pred;
-			while (curr.key < key) {
-				pred = curr;
-				curr = curr.next;
-			}
 			FNode<T> FNode = new FNode<T>(t);
 			FNode.next = curr;
 			pred.next = FNode;
 			return;
-
+			} finally {
+				curr.unlock();
+			}
 		} finally {
-			lock.unlock();
+			pred.unlock();
 		}
 	}
 
 	public void remove(T t) {
-		FNode<T> pp, pred, curr;
+		FNode<T> pred = null, curr=null;
 		int key = t.hashCode();
+		head.lock();
 		try {
-			pp = head;
-			pred = head.next;
+			pred = head;
 			curr = pred.next;
-			//empty list
-			if (curr == null)
-				return;
-
-			while (curr.key < key) {
-				pp = pred;
-				pred = curr;
-				curr = curr.next;
-			}
-
-			// parent of current position can be corrupt so we need grand-parent
-			// to be sure of non-coruption
-			lock.lock();
-			curr = pp;
-			while (curr.key < key) {
-				pp = pred;
-				pred = curr;
-				curr = curr.next;
-			}
-			if (key == curr.key) {
-				pred.next = curr.next;
-				return;
-			} else {
-				return;
+			curr.lock();
+			try{
+				while (curr.key < key) {
+					pred.unlock();
+					pred = curr;
+					curr = curr.next;
+					curr.lock();
+				}
+				if (curr.key == key) {
+					pred.next = curr.next;
+				}
+			} finally {
+				curr.unlock();
 			}
 		} finally {
-			lock.unlock();
+			pred.unlock();
 		}
 	}
 
