@@ -88,7 +88,7 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 		FTreeNode<T> parent = null;
 		FTreeNode<T> current = node;
 
-		System.out.println("Delete" + value);
+//		System.out.println("Delete" + value);
 		current.lock.lock();
 		head_lock.unlock();
 
@@ -109,6 +109,7 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 			}
 
 			if(current == null){
+				System.out.println("Exit!");
 				return false;
 			} else {
 				current.lock.lock();
@@ -120,26 +121,29 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 			}
 		}
 
-		if(parent != null)
-		{
-			System.out.println("Parent " + parent.lock.isLocked()  + " " + parent.value);
-		}
-		if(current != null){
-			System.out.println("Current " + current.lock.isLocked() + " " + current.value);
-		}
+//		if(parent != null)
+//		{
+//			System.out.println("Parent " + parent.lock.isLocked()  + " " + parent.value);
+//		}
+//		if(current != null){
+//			System.out.println("Current " + current.lock.isLocked() + " " + current.value);
+//		}
 
 		if(current.value.compareTo(value) == 0) {
 			found = true;
 			if(current.left != null && current.right != null){
 				FTreeNode<T> succ = getMin(current);
-				System.out.println("Successor" + succ.value);
+//				System.out.println("Successor" + succ.value);
 				current.value = succ.value;
 			} else if(current.left != null){
-				System.out.println("Left");
+//				System.out.println("Left");
 				if(parent != null){
 					current.left.lock.lock();
-					parent.left = current.left;
-					current.left.lock.lock();
+					if(parent.left == current)
+						parent.left = current.left;
+					else
+						parent.right = current.left;
+					current.left.lock.unlock();
 				}
 				else{
 					FTreeNode<T> old = current.left;
@@ -150,10 +154,15 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 					old.lock.unlock();
 				}
 			} else if(current.right != null){
-				System.out.println("Right");
+//				System.out.println("Right");
 				if(parent != null){
 					current.right.lock.lock();
-					parent.right = current.right;
+
+					if(parent.left == current)
+						parent.left = current.right;
+					else
+						parent.right = current.right;
+
 					current.right.lock.unlock();
 				}
 				else {
