@@ -10,67 +10,68 @@ class FTreeNode<T>{
 	public FTreeNode<T> parent;
 	public FTreeNode<T> right;
 	public FTreeNode<T> left;
-	public ReentrantLock lock_left, lock_right;
+	public ReentrantLock lock;
 
 	public FTreeNode(T val){
 		this.value = val;
 		this.parent = null;
 		this.right = null;
 		this.left = null;
-		this.lock_left = new ReentrantLock();
-		this.lock_right = new ReentrantLock();
+		this.lock = new ReentrantLock();
 	}
 
 }
 public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 
 	FTreeNode<T> root;
-	private Lock root_lock = new ReentrantLock();
+	/**
+	 * Since root can be null, a head lock is required
+	 */
+	private Lock head_lock = new ReentrantLock();
 
 	public void addToTree(FTreeNode<T> node, T value){
-		if(node.right == null && node.value.compareTo(value) < 0){
-			node.lock_right.lock();
-			if(node.right == null)
-			{
-				node.right = new FTreeNode<T>(value);
-				node.right.parent = node;
-			}
-			else
-				addToTree(node, value);
-			node.lock_right.unlock();
-			return;
+		FTreeNode<T> parent = null;
+		FTreeNode<T> current = node;
+		current.lock.lock();
+
+		if(current == root){
+			head_lock.unlock();
 		}
 
-		if(node.left == null && node.value.compareTo(value) >= 0){
-			node.lock_left.lock();
-			if(node.left == null)
-			{
-				node.left = new FTreeNode<T>(value);
-				node.left.parent = node;
+		while(true){
+			parent = current;
+			if(current.value.compareTo(value) < 0){
+				current = current.right;
+			} else {
+				current = current.left;
 			}
-			else
-				addToTree(node, value);
-			node.lock_left.unlock();
-			return;
+
+			if(current == null){
+				break;
+			} else {
+				// Hand over to next node
+				current.lock.lock();
+				parent.lock.unlock();
+			}
 		}
 
-		if(node.value.compareTo(value) < 0){
-			addToTree(node.right, value);
+		// Adding new Node
+		if(parent.value.compareTo(value) < 0){
+			parent.right = new FTreeNode<T>(value);
 		} else {
-			addToTree(node.left, value);
+			parent.left = new FTreeNode<T>(value);
 		}
+		parent.lock.unlock();
 	}
 
 	public void add(T t) {
 
-		root_lock.lock();
+		head_lock.lock();
 		if(root == null){
 			root = new FTreeNode<T>(t);
-			root_lock.unlock();
+			head_lock.unlock();
 			return;
 		}
-		root_lock.unlock();
-
 		addToTree(root,t);
 	}
 
@@ -84,65 +85,122 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 		if(node == null)
 			return false;
 		boolean found = false;
-		if(node.value.compareTo(value) > 0){
-			node.lock_left.lock();
-			found = deleteNode(node.left, value);
-			node.lock_left.unlock();
+		FTreeNode<T> parent = null;
+		FTreeNode<T> current = node;
+		System.out.println("Delete" + value);
+		current.lock.lock();
+		head_lock.unlock();
 
-		} else if(node.value.compareTo(value) < 0) {
-			node.lock_right.lock();
-			found = deleteNode(node.right, value);
-			node.lock_right.unlock();
+		while(true){
 
-		} else if(node.value.compareTo(value) == 0) {
-			found = true;
-			if(node.left != null && node.right != null){
-				FTreeNode<T> succ = getMin(node.right);
-				node.value = succ.value;
-				deleteNode(succ, succ.value);
-			} else if(node.left != null){
-				replace_parent(node, node.left);
-			} else if(node.right != null){
-				replace_parent(node, node.right);
+			// Do this before setting parent = current
+			if(current.value.compareTo(value) == 0){
+					break;
+			}
+			parent = current;
+
+			if(current.value.compareTo(value) > 0){
+				current = current.left;
+
+			} else if(current.value.compareTo(value) < 0) {
+				current = current.right;
+
+			}
+
+			if(current == null){
+				return false;
 			} else {
-				replace_parent(node, null);
+				current.lock.lock();
+				// unlock only current is not our value
+				// otherwise we need both locked to delete
+				// current
+				if(current.value.compareTo(value) != 0)
+					parent.lock.unlock();
 			}
 		}
+
+		System.out.println("Parent" + parent );
+		if(current.value.compareTo(value) == 0) {
+			found = true;
+			if(current.left != null && current.right != null){
+				FTreeNode<T> succ = getMin(current);
+				current.value = succ.value;
+			} else if(current.left != null){
+				if(parent != null){
+					current.left.lock.lock();
+					parent.left = current.left;
+					current.left.lock.lock();
+				}
+				else{
+					head_lock.lock();
+					current = current.left; // current is root
+					head_lock.unlock();
+				}
+			} else if(current.right != null){
+				if(parent != null){
+					current.right.lock.lock();
+					parent.right = current.right;
+					current.right.lock.unlock();
+				}
+				else {
+					head_lock.lock();
+					current = current.right; // current is root here
+					head_lock.unlock();
+				}
+			} else {
+				head_lock.lock();
+				root = null;
+				head_lock.unlock();
+			}
+		}
+		if(parent != null && parent.lock.isLocked()){
+			parent.lock.unlock();
+		}
+		if(current != null)
+			current.lock.unlock();
 		return found;
 	}
 
-	/**
-	 * Executes the delete operation for node
-	 * @param node - node to be deleted
-	 * @param newNode - new node to be set instead of old one
-	 */
-	private void replace_parent(FTreeNode<T> node, FTreeNode<T> newNode){
-		if(node.parent != null){
-			if(node == node.parent.left){
-				node.parent.left = newNode;
-			} else {
-				node.parent.right = newNode;
-			}
-		} else { // root node
-			root = newNode;
-		}
-
-		if(newNode != null){
-			newNode.parent = node.parent;
-		}
-	}
-
 	private FTreeNode<T> getMin(FTreeNode<T> node) {
-		FTreeNode<T> current = node;
-
-		while(current.left != null){
+		FTreeNode<T>parentNode = node;
+		FTreeNode<T> current = node.right;
+		current.lock.lock();
+		while(current.left != null) {
+			if(parentNode != node)
+				parentNode.lock.unlock();
+			parentNode = current;
 			current = current.left;
+			current.lock.lock();
 		}
+
+		// checking if smallest node do not have any right child
+		if(current.right != null){
+			current.right.lock.lock();
+		}
+
+		if(parentNode == node){
+			parentNode.right = current.right;
+		} else {
+			parentNode.left = current.right;
+			parentNode.lock.unlock();
+		}
+
+		if(current.right != null){
+			current.right.lock.unlock();
+		}
+		current.lock.unlock();
+
 		return current;
 	}
 
 	public void remove(T t) {
-		deleteNode(root,t);
+		head_lock.lock();
+		if(root != null) {
+			deleteNode(root,t);
+		} else {
+			System.out.println("Root is null");
+			head_lock.unlock();
+		}
 	}
 
 	/**
