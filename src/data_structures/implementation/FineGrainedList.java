@@ -14,7 +14,10 @@ class FNode <T extends Comparable<T>> {
 	public FNode(T data)
 	{
 		this.data = data;
-		this.key = data.hashCode();
+		if(data != null)
+			this.key = data.hashCode();
+		else
+			this.key = Integer.MIN_VALUE;
 		this.next = null;
 		this.lock = new ReentrantLock();
 	}
@@ -38,8 +41,7 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 	private FNode<T> head;
 	public FineGrainedList()
 	{
-		this.head = new FNode(Integer.MIN_VALUE);
-		this.head.next = new FNode(Integer.MAX_VALUE);
+		this.head = new FNode<T>(null);
 	}
 
 	public void add(T t) {
@@ -51,21 +53,29 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 
 		try {
 			curr = pred.next;
-			curr.lock();
-			try{
-				while (curr.key < key) {
-					pred.unlock();
-					pred = curr;
-					curr = curr.next;
-					curr.lock();
+			if(curr != null)
+			{
+				curr.lock();
+				try{
+					while (curr.key < key && curr.next != null) {
+						pred.unlock();
+						pred = curr;
+						curr = curr.next;
+						curr.lock();
+					}
+	
+				FNode<T> FNode = new FNode<T>(t);
+				FNode.next = curr;
+				pred.next = FNode;
+				} finally {
+					curr.unlock();
 				}
-
-			FNode<T> FNode = new FNode<T>(t);
-			FNode.next = curr;
-			pred.next = FNode;
-			return;
-			} finally {
-				curr.unlock();
+			}
+			else
+			{
+				FNode<T> FNode = new FNode<T>(t);
+				FNode.next = null;
+				pred.next = FNode;
 			}
 		} finally {
 			pred.unlock();
@@ -104,8 +114,10 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 		int key = head.hashCode();
 
 		curr = head.next;
+		if(curr == null)
+			return "[]";
 
-		while (curr.key < key) {
+		while (curr.key < key && curr.next != null) {
 			result += curr.toString()+", ";
 			curr = curr.next;
 		}
