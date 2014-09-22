@@ -88,7 +88,6 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 		FTreeNode<T> parent = null;
 		FTreeNode<T> current = node;
 
-//		System.out.println("Delete" + value);
 		current.lock.lock();
 		head_lock.unlock();
 
@@ -121,22 +120,12 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 			}
 		}
 
-//		if(parent != null)
-//		{
-//			System.out.println("Parent " + parent.lock.isLocked()  + " " + parent.value);
-//		}
-//		if(current != null){
-//			System.out.println("Current " + current.lock.isLocked() + " " + current.value);
-//		}
-
 		if(current.value.compareTo(value) == 0) {
 			found = true;
 			if(current.left != null && current.right != null){
 				FTreeNode<T> succ = getMin(current);
-//				System.out.println("Successor" + succ.value);
 				current.value = succ.value;
 			} else if(current.left != null){
-//				System.out.println("Left");
 				if(parent != null){
 					current.left.lock.lock();
 					if(parent.left == current)
@@ -154,7 +143,6 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 					old.lock.unlock();
 				}
 			} else if(current.right != null){
-//				System.out.println("Right");
 				if(parent != null){
 					current.right.lock.lock();
 
@@ -174,7 +162,6 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 					old.lock.unlock();
 				}
 			} else {
-//				System.out.println("")
 				if(parent != null){
 					if(parent.left == current){
 						parent.left = null;
@@ -196,6 +183,11 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 		return found;
 	}
 
+	/**
+	 * Get the minimum from the right subtree and delete it
+	 * @param node - minimum is searched in node.right
+	 * @return	   - node with min value
+	 */
 	private FTreeNode<T> getMin(FTreeNode<T> node) {
 		FTreeNode<T>parentNode = node;
 		FTreeNode<T> current = node.right;
@@ -251,17 +243,6 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 				 + node.value + ", "
 				+ inOrder(node.right, depth+1);
 	}
-
-	private void Test( FTreeNode node )
-	  {
-	      if ( node == null )
-	        return;
-
-	     Test( node.left );
-	     System.out.println( "Node data: " + node.value);
-	     Test( node.right );
-
-	  }
 
 	public String toString() {
 		String rez = inOrder(root,0);
