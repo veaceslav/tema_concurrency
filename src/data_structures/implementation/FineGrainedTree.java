@@ -122,10 +122,10 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 
 		if(parent != null)
 		{
-			System.out.println("Parent" + parent.lock.isLocked()  + " " + parent.value);
+			System.out.println("Parent " + parent.lock.isLocked()  + " " + parent.value);
 		}
 		if(current != null){
-			System.out.println("Current" + current.lock.isLocked() + " " + current.value);
+			System.out.println("Current " + current.lock.isLocked() + " " + current.value);
 		}
 
 		if(current.value.compareTo(value) == 0) {
@@ -142,9 +142,12 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 					current.left.lock.lock();
 				}
 				else{
-					head_lock.lock();
-					current = current.left; // current is root
-					head_lock.unlock();
+					FTreeNode<T> old = current.left;
+					old.lock.lock();
+					current.value = old.value;
+					current.right = old.right;
+					current.left = old.left;
+					old.lock.unlock();
 				}
 			} else if(current.right != null){
 				System.out.println("Right");
@@ -154,9 +157,12 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 					current.right.lock.unlock();
 				}
 				else {
-					head_lock.lock();
-					current = current.right; // current is root here
-					head_lock.unlock();
+					FTreeNode<T> old = current.right;
+					old.lock.lock();
+					current.value = old.value;
+					current.right = old.right;
+					current.left = old.left;
+					old.lock.unlock();
 				}
 			} else {
 //				System.out.println("")
