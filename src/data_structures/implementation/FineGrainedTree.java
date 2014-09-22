@@ -82,11 +82,12 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 	 * @return - true if a node was deleted
 	 */
 	private boolean deleteNode(FTreeNode<T> node, T value){
-		if(node == null)
-			return false;
+
+
 		boolean found = false;
 		FTreeNode<T> parent = null;
 		FTreeNode<T> current = node;
+
 		System.out.println("Delete" + value);
 		current.lock.lock();
 		head_lock.unlock();
@@ -119,13 +120,22 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 			}
 		}
 
-		System.out.println("Parent" + parent );
+		if(parent != null)
+		{
+			System.out.println("Parent" + parent.lock.isLocked()  + " " + parent.value);
+		}
+		if(current != null){
+			System.out.println("Current" + current.lock.isLocked() + " " + current.value);
+		}
+
 		if(current.value.compareTo(value) == 0) {
 			found = true;
 			if(current.left != null && current.right != null){
 				FTreeNode<T> succ = getMin(current);
+				System.out.println("Successor" + succ.value);
 				current.value = succ.value;
 			} else if(current.left != null){
+				System.out.println("Left");
 				if(parent != null){
 					current.left.lock.lock();
 					parent.left = current.left;
@@ -137,6 +147,7 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 					head_lock.unlock();
 				}
 			} else if(current.right != null){
+				System.out.println("Right");
 				if(parent != null){
 					current.right.lock.lock();
 					parent.right = current.right;
@@ -148,9 +159,18 @@ public class FineGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 					head_lock.unlock();
 				}
 			} else {
-				head_lock.lock();
-				root = null;
-				head_lock.unlock();
+//				System.out.println("")
+				if(parent != null){
+					if(parent.left == current){
+						parent.left = null;
+					} else {
+						parent.right = null;
+					}
+				} else {
+					head_lock.lock();
+					root = null;
+					head_lock.unlock();
+				}
 			}
 		}
 		if(parent != null && parent.lock.isLocked()){
