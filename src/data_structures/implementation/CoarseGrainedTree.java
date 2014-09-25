@@ -24,6 +24,7 @@ public class CoarseGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 //		throw new UnsupportedOperationException();
 		if(root == null){
 			root = new TreeNode<T>(t);
+			return;
 		}
 
 		addToTree(root,t);
@@ -53,7 +54,7 @@ public class CoarseGrainedTree<T extends Comparable<T>> implements Sorted<T> {
 		// each time only one node is deleted
 		// run deleteNode until all nodes with
 		// value t are deleted
-		while(deleteNode(root,t)){}
+		deleteNode(root,t);
 	}
 
 	/**
