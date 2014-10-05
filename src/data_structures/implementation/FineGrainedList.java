@@ -26,7 +26,7 @@ class FNode <T extends Comparable<T>> {
 	{
 		return this.data+"";
 	}
-	
+
 	public void lock()
 	{
 		this.lock.lock();
@@ -63,7 +63,7 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 						curr = curr.next;
 						curr.lock();
 					}
-	
+
 				FNode<T> FNode = new FNode<T>(t);
 				FNode.next = curr;
 				pred.next = FNode;
@@ -111,13 +111,12 @@ public class FineGrainedList<T extends Comparable<T>> implements Sorted<T> {
 	public String toString() {
 		FNode<T> curr;
 		String result = "[";
-		int key = head.hashCode();
 
 		curr = head.next;
 		if(curr == null)
 			return "[]";
 
-		while (curr.key < key && curr.next != null) {
+		while (curr != null) {
 			result += curr.toString()+", ";
 			curr = curr.next;
 		}
