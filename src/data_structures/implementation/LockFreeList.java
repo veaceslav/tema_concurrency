@@ -8,7 +8,8 @@ class LNode<T>{
 	public T value;
 	AtomicMarkableReference<LNode<T>> next;
 
-	LNode(T value){
+	LNode(LNode<T> next,T value){
+		this.next = new AtomicMarkableReference<LNode<T>>(next, false);
 		this.value = value;
 	}
 }
@@ -24,33 +25,24 @@ class Window<T>{
 public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 
 	LNode<T> root;
-
+	LNode<T> tail;
 	public LockFreeList(){
-		root = new LNode<T>(null);
-		root.next = new AtomicMarkableReference<LNode<T>>(null, false);
+		tail = new LNode<T>(null,null);
+		root = new LNode<T>(tail,null);
+//		root.next = new AtomicMarkableReference<LNode<T>>(null, false);
 	}
 
 	public void add(T t) {
-//		System.out.println("Setting value" + t);
-		LNode<T> fnode = new LNode<T>(t);
-		fnode.next = new AtomicMarkableReference<LNode<T>>(null, false);
-		if(root.next.compareAndSet(null, fnode, false, false))
-			return;
 
-//		System.out.println("No first node" + this.toString());
 		while(true){
 			Window<T> window = find(root, t);
 			LNode<T> pred = window.pred, current = window.current;
-			if(current != null && current.value.compareTo(t) == 0){
+			LNode<T> node = new LNode<T>(current,t);
+			if(pred.next.compareAndSet(current, node, false, false))
 				return;
-			} else {
-				LNode<T> node = new LNode<T>(t);
-				node.next = new AtomicMarkableReference<LNode<T>>(current, false);
-				if(pred.next.compareAndSet(current, node, false, false))
-					return;
 			}
 		}
-	}
+
 
 	public void remove(T t) {
 		boolean snip = false;
@@ -96,9 +88,9 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 			pred = head;
 			curr = pred.next.getReference();
 			while(true){
-				succ = curr.next.getReference();
-				if(succ == null)
+				if(curr == tail)
 					return new Window<T>(pred,curr);
+				succ = curr.next.get(marked);
 				while(marked[0]){
 					snip = pred.next.compareAndSet(curr, succ, false, false);
 					if(!snip) continue retry;
