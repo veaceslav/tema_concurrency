@@ -29,7 +29,6 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 	public LockFreeList(){
 		tail = new LNode<T>(null,null);
 		root = new LNode<T>(tail,null);
-//		root.next = new AtomicMarkableReference<LNode<T>>(null, false);
 	}
 
 	public void add(T t) {
@@ -72,7 +71,8 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 		result = result + "[" + cursor.value;
 
 		while(cursor.next.getReference() != tail){
-			result = result + ", " +cursor.next.getReference().value;
+			if(!cursor.next.isMarked())
+				result = result + ", " +cursor.next.getReference().value;
 			cursor = cursor.next.getReference();
 		}
 
