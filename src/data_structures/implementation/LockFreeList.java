@@ -66,12 +66,12 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 	public String toString() {
 		String result = new String();
 		LNode<T> cursor = root.next.getReference();
-		if(cursor == null){
+		if(cursor == tail){
 			return new String("[]");
 		}
 		result = result + "[" + cursor.value;
 
-		while(cursor.next.getReference() != null){
+		while(cursor.next.getReference() != tail){
 			result = result + ", " +cursor.next.getReference().value;
 			cursor = cursor.next.getReference();
 		}
@@ -93,7 +93,8 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 				succ = curr.next.get(marked);
 				while(marked[0]){
 					snip = pred.next.compareAndSet(curr, succ, false, false);
-					if(!snip) continue retry;
+					if(!snip)
+						continue retry;
 					curr = succ;
 					succ = curr.next.get(marked);
 				}
