@@ -49,9 +49,9 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 			Window<T> window = find(root, t);
 			LNode<T> pred = window.pred, current = window.current;
 
-			if(current.value.compareTo(t) != 0){
-				return;
-			} else {
+//			if(current.value.compareTo(t) != 0){
+//				return;
+//			} else {
 				LNode<T> succ = current.next.getReference();
 				snip = current.next.attemptMark(succ, true);
 				if(!snip)
@@ -60,7 +60,6 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 				return;
 			}
 		}
-	}
 
 	public String toString() {
 		String result = new String();
@@ -68,7 +67,8 @@ public class LockFreeList<T extends Comparable<T>> implements Sorted<T> {
 		if(cursor == tail){
 			return new String("[]");
 		}
-		result = result + "[" + cursor.value;
+		if(!root.next.isMarked())
+			result = result + "[" + cursor.value;
 
 		while(cursor.next.getReference() != tail){
 			if(!cursor.next.isMarked())
